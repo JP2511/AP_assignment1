@@ -62,15 +62,29 @@ evalSimple (Sub x y) = applyOpOnExp x y (-)
 evalSimple (Mul x y) = applyOpOnExp x y (*)
 evalSimple (Div x y) = applyOpOnExp x y (div)
 evalSimple (Pow x y) = applyOpOnExp x y (^)
-evalSimple _         = error "Operation not possible to print in expression"
+evalSimple _         = error "Operation not possible to evaluate in expression"
 
 
+-- ----------------------------------------------------------------------------
+--  Problem 2
 
 extendEnv :: VName -> Integer -> Env -> Env
-extendEnv = undefined
+extendEnv name value env = \x -> if x == name then value else env
+
 
 evalFull :: Exp -> Env -> Integer
-evalFull = undefined
+evalFull (If {test, yes, no})        _   = if test /= 0 then yes else no
+evalFull (Var v)                     env = env v
+evalFull (Let {var, def, body})      env = evalFull body (extendEnv var def env)
+evalFull (Sum {var, from, to, body}) env = foldr f 0 (enumFromTo i n) where
+  f x acc = (+) acc (evalFull body (extendEnv var x env))
+  i = evalFull from env
+  j = evalFull to   env
+evalFull x                           _   = evalSimple x
+
+
+-- ----------------------------------------------------------------------------
+--  Problem 3
 
 evalErr :: Exp -> Env -> Either ArithError Integer
 evalErr = undefined
