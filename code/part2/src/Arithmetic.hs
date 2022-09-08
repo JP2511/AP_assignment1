@@ -44,15 +44,15 @@ showExp (Sub x y) = createRepExp x y " - "
 showExp (Mul x y) = createRepExp x y " * "
 showExp (Div x y) = createRepExp x y " div "
 showExp (Pow x y) = createRepExp x y " ^ "
-showExp _         = error "Operation not possible to print in expression"
+showExp _         = error "Operation not possible to print in expression."
 
 
 -- ------------- --
 --  Problem 1.2  --
 -- ------------- --
 
-applyOpOnExp :: Num a => Exp -> Exp -> (a -> a -> a)
-applyOpOnExp x y f = f (evalSimple x) (evalSimple y)
+applyOpOnExp :: Exp -> Exp -> (Integer -> Integer -> Integer) -> Integer
+applyOpOnExp x y f   = f (evalSimple x) (evalSimple y)
 
 
 evalSimple :: Exp -> Integer
@@ -60,26 +60,36 @@ evalSimple (Cst x)   = x
 evalSimple (Add x y) = applyOpOnExp x y (+)
 evalSimple (Sub x y) = applyOpOnExp x y (-)
 evalSimple (Mul x y) = applyOpOnExp x y (*)
-evalSimple (Div x y) = applyOpOnExp x y (div)
+evalSimple (Div x y) = if b == 0 || a < b
+  then error "Division where numerator is smaller than denominator"
+  else div a b
+  where
+    a = evalSimple x
+    b = evalSimple y
 evalSimple (Pow x y) = applyOpOnExp x y (^)
-evalSimple _         = error "Operation not possible to evaluate in expression"
+evalSimple _         = error "Operation not possible to evaluate in expression."
 
 
 -- ----------------------------------------------------------------------------
 --  Problem 2
 
 extendEnv :: VName -> Integer -> Env -> Env
-extendEnv name value env = \x -> if x == name then value else env
+extendEnv name value env = \x -> if x == name then Just value else env x
 
 
 evalFull :: Exp -> Env -> Integer
-evalFull (If {test, yes, no})        _   = if test /= 0 then yes else no
-evalFull (Var v)                     env = env v
-evalFull (Let {var, def, body})      env = evalFull body (extendEnv var def env)
-evalFull (Sum {var, from, to, body}) env = foldr f 0 (enumFromTo i n) where
+evalFull (If test yes no)       env = if (evalFull test env) /= 0 
+  then evalFull yes env
+  else evalFull no  env
+evalFull (Var v)                env = f . env $ v where
+  f Nothing  = error "Value constructor 'Nothing' in expression"
+  f (Just x) = x
+evalFull (Let var def body)     env = evalFull body $ extendEnv var value env
+  where value = evalFull def env
+evalFull (Sum var from to body) env = foldr f 0 (enumFromTo i n) where
   f x acc = (+) acc (evalFull body (extendEnv var x env))
   i = evalFull from env
-  j = evalFull to   env
+  n = evalFull to   env
 evalFull x                           _   = evalSimple x
 
 
