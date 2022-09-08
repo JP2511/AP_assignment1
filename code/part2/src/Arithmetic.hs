@@ -90,16 +90,73 @@ evalFull (Sum var from to body) env = foldr f 0 (enumFromTo i n) where
   f x acc = (+) acc (evalFull body (extendEnv var x env))
   i = evalFull from env
   n = evalFull to   env
-evalFull x                           _   = evalSimple x
+evalFull x _ = evalSimple x
 
 
 -- ----------------------------------------------------------------------------
 --  Problem 3
 
-evalErr :: Exp -> Env -> Either ArithError Integer
-evalErr = undefined
+parseArgs :: Exp -> Exp -> Env -> Either ArithError (Integer, Integer)
+applyOpOnExpErr x y f env = errorParser a b where
+  a = evalErr x env
+  b = evalErr y env
+  errorParser (Left e)  _         = Left e
+  errorParser _         (Left e)  = Left e
+  errorParser (Right i) (Right j) = Right (i, j)
 
--- optional parts (if not attempted, leave them unmodified)
+
+applyFuncErr :: Either ArithError (Integer, Integer) -> 
+                (Integer -> Integer -> Integer) ->
+                Either ArithError Integer
+applyFuncErr (Left e)    _ = Left e
+applyFuncErr (Right a b) f = Right (f a b)
+
+
+parser :: Exp -> Exp -> (Integer -> Integer -> Integer) -> Env ->
+  Either ArithError Integer
+parser x y f env = applyFuncErr (parseArgs x y env) f
+
+
+evalErr :: Exp -> Env -> Either ArithError Integer
+-- Constant
+evalErr (Cst x) env = Right x
+-- Addition
+evalErr (Add x y) = parser x y (+)
+-- Subtraction
+evalErr (Sub x y) = parser x y (-)
+-- Multiplication
+evalErr (Mul x y) = parser x y (*)
+-- Division
+evalErr (Div x y) env = f $ parseArgs x y env
+  f (Right (a, b)) 
+    | b == 0 = Left EDivZero
+    | a < b = Left (EOther "Division -> numerator smaller than denominator")
+    | otherwise = Right (div a b) 
+  f e = e
+-- Conditional
+evalErr (If test yes no) env = f $ evalErr test env where
+  f (Right a) = if a /= 0 then evalErr yes env else evalErr no env
+  f e         = e
+-- Variable
+evalErr (Var v) env = f . env $ v where
+  f Nothing  = Left (EBadVar v)
+  f (Just x) = Right x
+-- Equation
+evalErr (Let var def body) env = f (evalErr def env)
+  f (Right val) = evalFull body $ extendEnv var value env
+  f e           = e
+-- Sum
+evalErr (Sum var from to body) env = f $ parseArgs from to env where
+  f (Right (a, b)) = foldr g (Right 0) (enumFromTo a b) where
+    g _ (Left e)    = Left e
+    g x (Right acc) = h (evalErr body $ extendEnv var x env) where
+      h (Right z) = Right $ z + acc
+      h e         = e
+  f e = e
+
+
+-- ----------------------------------------------------------------------------
+--  Problem 4 -- optional parts (if not attempted, leave them unmodified)
 
 showCompact :: Exp -> String
 showCompact = undefined
