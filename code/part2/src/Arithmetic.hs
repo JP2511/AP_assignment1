@@ -51,22 +51,22 @@ showExp _         = error "Operation not possible to print in expression."
 --  Problem 1.2  --
 -- ------------- --
 
-applyOpOnExp :: Exp -> Exp -> (Integer -> Integer -> Integer) -> Integer
-applyOpOnExp x y f   = f (evalSimple x) (evalSimple y)
+applySimEval :: Exp -> Exp -> (Integer -> Integer -> Integer) -> Integer
+applySimEval x y f   = f (evalSimple x) (evalSimple y)
 
 
 evalSimple :: Exp -> Integer
 evalSimple (Cst x)   = x
-evalSimple (Add x y) = applyOpOnExp x y (+)
-evalSimple (Sub x y) = applyOpOnExp x y (-)
-evalSimple (Mul x y) = applyOpOnExp x y (*)
+evalSimple (Add x y) = applySimEval x y (+)
+evalSimple (Sub x y) = applySimEval x y (-)
+evalSimple (Mul x y) = applySimEval x y (*)
 evalSimple (Div x y) = if b == 0 || a < b
   then error "Division where numerator is smaller than denominator"
   else div a b
   where
     a = evalSimple x
     b = evalSimple y
-evalSimple (Pow x y) = applyOpOnExp x y (^)
+evalSimple (Pow x y) = applySimEval x y (^)
 evalSimple _         = error "Operation not possible to evaluate in expression."
 
 
@@ -77,7 +77,22 @@ extendEnv :: VName -> Integer -> Env -> Env
 extendEnv name value env = \x -> if x == name then Just value else env x
 
 
+applyFullEval :: Exp -> Exp -> (Integer -> Integer -> Integer) -> Integer
+applyFullEval x y f   = f (evalFull x) (evalFull y)
+
+
 evalFull :: Exp -> Env -> Integer
+evalFull (Cst x)   = x
+evalFull (Add x y) = applyFullEval x y (+)
+evalFull (Sub x y) = applyFullEval x y (-)
+evalFull (Mul x y) = applyFullEval x y (*)
+evalFull (Div x y) = if b == 0 || a < b
+  then error "Division where numerator is smaller than denominator"
+  else div a b
+  where
+    a = evalFull x
+    b = evalFull y
+evalFull (Pow x y) = applyFullEval x y (^)
 evalFull (If test yes no)       env = if (evalFull test env) /= 0 
   then evalFull yes env
   else evalFull no  env
