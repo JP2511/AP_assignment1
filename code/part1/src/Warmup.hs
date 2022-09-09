@@ -53,14 +53,19 @@ data Tree = Leaf | Node Int Tree Tree
 
 
 insert :: Int -> Tree -> Tree
-insert x (Node y l r) = if x > y then insert x r else insert x l
 insert x Leaf         = Node x Leaf Leaf
+insert x (Node y l r) = if x > y 
+  then Node y l $ insert x r 
+  else Node y (insert x l) r
 
 
 -- The polymorphic variant, to avoid name clashes with the above
 data PTree a = PLeaf | PNode a (PTree a) (PTree a)
   deriving (Eq, Show, Read, Ord)
 
+
 --pinsert :: FIXME  -- uncomment and replace with the proper type of pinsert
-pinsert x (PNode y l r) = if x > y then pinsert x r else pinsert x l
 pinsert x PLeaf         = PNode x PLeaf PLeaf
+pinsert x (PNode y l r) = if x > y 
+  then PNode y l $ pinsert x r 
+  else PNode y (pinsert x l) r
