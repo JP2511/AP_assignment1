@@ -64,7 +64,7 @@ data PTree a = PLeaf | PNode a (PTree a) (PTree a)
   deriving (Eq, Show, Read, Ord)
 
 
---pinsert :: FIXME  -- uncomment and replace with the proper type of pinsert
+pinsert :: a -> PTree a -> PTree a
 pinsert x PLeaf         = PNode x PLeaf PLeaf
 pinsert x (PNode y l r) = if x > y 
   then PNode y l $ pinsert x r 
