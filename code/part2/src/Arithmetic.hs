@@ -63,13 +63,19 @@ evalSimple (Cst x)   = x
 evalSimple (Add x y) = applySimEval x y (+)
 evalSimple (Sub x y) = applySimEval x y (-)
 evalSimple (Mul x y) = applySimEval x y (*)
-evalSimple (Div x y) = if b == 0 || a < b
-  then error "Division where numerator is smaller than denominator"
-  else div a b
+evalSimple (Div x y) 
+  | a < b     = error "Division: numerator is smaller than denominator"
+  | b == 0    = error "Division: denominator is equal to zero."
+  | otherwise = div a b
   where
     a = evalSimple x
     b = evalSimple y
-evalSimple (Pow x y) = applySimEval x y (^)
+evalSimple (Pow x y) = if b < 0
+  then error "Exponent lower than zero."
+  else (+) a 0 + (^) a b
+  where
+    a = (evalSimple x) + 0
+    b = evalSimple y
 evalSimple _         = error "Operation not possible to evaluate in expression."
 
 
@@ -86,25 +92,40 @@ applyFullEval x y f env  = f (evalFull x env) (evalFull y env)
 
 
 evalFull :: Exp -> Env -> Integer
+-- Constant
 evalFull (Cst x)   _   = x
+-- Addition
 evalFull (Add x y) env = applyFullEval x y (+) env
+-- Subtraction
 evalFull (Sub x y) env = applyFullEval x y (-) env
+-- Multiplication
 evalFull (Mul x y) env = applyFullEval x y (*) env
+-- Division
 evalFull (Div x y) env = if b == 0 || a < b
   then error "Division where numerator is smaller than denominator"
   else div a b
   where
     a = evalFull x env
     b = evalFull y env
-evalFull (Pow x y) env = applyFullEval x y (^) env
+-- Power
+evalFull (Pow x y) env = if b < 0
+  then error "Exponent lower than zero."
+  else (+) a 0 + (^) a b
+  where
+    a = evalFull x env
+    b = evalFull y env
+-- Conditional
 evalFull (If test yes no)       env = if (evalFull test env) /= 0 
   then evalFull yes env
   else evalFull no  env
+-- Variable
 evalFull (Var v)                env = f . env $ v where
   f Nothing  = error "Value constructor 'Nothing' in expression"
   f (Just x) = x
+-- Equation
 evalFull (Let var def body)     env = evalFull body $ extendEnv var value env
   where value = evalFull def env
+-- Sum
 evalFull (Sum var from to body) env = foldr f 0 (enumFromTo i n) where
   f x acc = (+) acc (evalFull body (extendEnv var x env))
   i = evalFull from env
