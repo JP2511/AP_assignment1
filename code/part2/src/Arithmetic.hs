@@ -29,6 +29,9 @@ addParenthesis :: String -> String
 addParenthesis exp = "(" ++ exp ++ ")"
 
 
+{- Joins the string representations of the expressions using a string 
+representation of the operation to be performed on the expressions. 
+-}
 joinExp :: Exp -> Exp -> String -> String
 joinExp x y joiner = (showExp x) ++ joiner ++ (showExp y)
 
@@ -106,12 +109,15 @@ evalFull (Sum var from to body) env = foldr f 0 (enumFromTo i n) where
   f x acc = (+) acc (evalFull body (extendEnv var x env))
   i = evalFull from env
   n = evalFull to   env
-evalFull x _ = evalSimple x
 
 
 -- ----------------------------------------------------------------------------
 --  Problem 3
 
+{- Evaluates the two expressions given. If any of the evaluate to an error, then
+  it returns the error, otherwise it returns the evaluated expressions as
+  a tuple.
+-}
 parseArgs :: Exp -> Exp -> Env -> Either ArithError (Integer, Integer)
 parseArgs x y env = errorParser a b where
   a = evalErr x env
@@ -121,6 +127,10 @@ parseArgs x y env = errorParser a b where
   errorParser (Right i) (Right j) = Right (i, j)
 
 
+{- Applies an operation (function) to the two elements of the tuple if a tuple
+  is given. If an error is provided, then the function simply propagates the 
+  error.
+-}
 applyFuncErr :: Either ArithError (Integer, Integer) -> 
                 (Integer -> Integer -> Integer) ->
                 Either ArithError Integer
@@ -128,6 +138,10 @@ applyFuncErr (Left e)    _ = Left e
 applyFuncErr (Right (a, b)) f = Right (f a b)
 
 
+{- Evaluates an expression by performing an operation on two expressions that
+are evaluated. If any error occurs, it is propagated. Otherwise, the result is
+returned.
+-}
 parser :: Exp -> Exp -> (Integer -> Integer -> Integer) -> Env ->
   Either ArithError Integer
 parser x y f env = applyFuncErr (parseArgs x y env) f
