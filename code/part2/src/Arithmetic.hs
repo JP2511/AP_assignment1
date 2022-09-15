@@ -71,9 +71,9 @@ evalSimple (Div x y) = if b == 0
     b = evalSimple y
 evalSimple (Pow x y) = if b < 0
   then error "Exponent lower than zero."
-  else (+) a 0 + (^) a b
+  else (-) a a + (^) a b
   where
-    a = (evalSimple x) + 0
+    a = evalSimple x
     b = evalSimple y
 evalSimple _         = error "Operation not possible to evaluate in expression."
 
@@ -109,7 +109,7 @@ evalFull (Div x y) env = if b == 0
 -- Power
 evalFull (Pow x y) env = if b < 0
   then error "Exponent lower than zero."
-  else (+) a 0 + (^) a b
+  else (-) a a + (^) a b
   where
     a = evalFull x env
     b = evalFull y env
