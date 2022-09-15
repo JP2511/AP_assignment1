@@ -46,6 +46,32 @@ testShowExp = testGroup "Unit Tests for showExp"
       showExp (Pow divExp mulExp) @?= complexShowResult 
   ]
 
+
+testEvalSimple = testGroup "Unit Tests for evalSimple"
+  [
+    testCase "Evaluating a simple constant" $
+      evalSimple (Cst 2) @?= 2,
+    
+    testCase "Evaluating an addition between constants" $
+      evalSimple (Add (Cst 1) (Cst 2)) @?= 3,
+    
+    testCase "Evaluating a subtraction between constants" $
+      evalSimple (Sub (Cst 1) (Cst 2)) @?= (-1),
+    
+    testCase "Evaluating a multiplication between constants" $
+      evalSimple (Mul (Cst 2) (Cst 3)) @?= 6,
+    
+    testCase "Evaluating a division between constants" $
+      evalSimple (Div (Cst 10) (Cst 5)) @?= 2,
+    
+    testCase "Evaluating an exponentiation between constants" $
+      evalSimple (Pow (Cst 2) (Cst 3)) @?= 8,
+    
+    testCase "Evaluating a more complex expression" $
+      evalSimple (Pow divExp mulExp) @?= 0
+  ]
+
+
 main :: IO ()
 main =
   let failed = [name | (name, ok) <- tests, not ok]
