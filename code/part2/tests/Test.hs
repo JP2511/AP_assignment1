@@ -74,6 +74,22 @@ testEvalSimple = testGroup "Unit Tests for evalSimple"
   ]
 
 
+testExtendEnv = testGroup "Unit Tests for extendEnv"
+  [
+    testCase "Extending an empty environment and fetching new variable" $
+      (extendEnv "x" 3 initEnv) "x" @?= Just 3,
+    
+    testCase "Extending an empty environment and checking a non variable" $
+      (extendEnv "x" 3 initEnv) "y" @?= Nothing,
+
+    testCase "Extending a non-empty environment and fetching new variable" $
+      (extendEnv "y" 4 (extendEnv "x" 3 initEnv)) "y" @?= Just 4,
+    
+    testCase "Extending a non-empty environmnet and fetching old variable" $
+      (extendEnv "y" 4 (extendEnv "x" 3 initEnv)) "x" @?= Just 3
+  ]
+
+
 -- Environment with multiple 
 complexEnv = \y -> if y == "y" then Just 4 else f y where
   f = \x -> if x == "x" then Just 2 else initEnv x
