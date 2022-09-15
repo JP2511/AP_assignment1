@@ -14,11 +14,13 @@ tests = [test1, test2, test3] where
   test2 = ("test2", evalFull (Let "a" (Cst 42) (Var "a")) initEnv == 42)
   test3 = ("test3", evalErr (Var "x") initEnv == Left (EBadVar "x"))
 
-{- Complex Expression which I couldn't fit inside of a testCase because where
+
+{- Complex Expression which we couldn't fit inside of a testCase because where
   doesn't work inside of a testCase
 -}
 divExp = Div (Cst 1) (Cst 2)
 mulExp = Mul (Add (Cst 3) (Cst 4)) (Sub (Cst 6) (Cst 5))
+complexExp = Pow divExp mulExp
 complexShowResult = "((1 div 2) ^ ((3 + 4) * (6 - 5)))"
 
 
@@ -43,7 +45,7 @@ testShowExp = testGroup "Unit Tests for showExp"
       showExp (Pow (Cst 1) (Cst 2)) @?= "(1 ^ 2)",
 
     testCase "Printing a more complex expression" $
-      showExp (Pow divExp mulExp) @?= complexShowResult 
+      showExp complexExp @?= complexShowResult 
   ]
 
 
@@ -68,7 +70,60 @@ testEvalSimple = testGroup "Unit Tests for evalSimple"
       evalSimple (Pow (Cst 2) (Cst 3)) @?= 8,
     
     testCase "Evaluating a more complex expression" $
-      evalSimple (Pow divExp mulExp) @?= 0
+      evalSimple complexExp @?= 0
+  ]
+
+
+-- Environment with multiple 
+complexEnv = \y -> if y == "y" then Just 4 else f y where
+  f = \x -> if x == "x" then Just 2 else initEnv x
+
+testEvalFull = testGroup "Unit Tests for evalFull"
+  [
+    testCase "Evaluating a simple constant" $
+      evalFull (Cst 2) initEnv @?= 2,
+    
+    testCase "Evaluating an addition between constants" $
+      evalFull (Add (Cst 1) (Cst 2)) initEnv @?= 3,
+    
+    testCase "Evaluating a subtraction between constants" $
+      evalFull (Sub (Cst 1) (Cst 2)) initEnv @?= (-1),
+    
+    testCase "Evaluating a multiplication between constants" $
+      evalFull (Mul (Cst 2) (Cst 3)) initEnv @?= 6,
+    
+    testCase "Evaluating a division between constants" $
+      evalFull (Div (Cst 10) (Cst 5)) initEnv @?= 2,
+    
+    testCase "Evaluating an exponentiation between constants" $
+      evalFull (Pow (Cst 2) (Cst 3)) initEnv @?= 8,
+    
+    testCase "Evaluating a more complex expression" $
+      evalFull (Pow divExp mulExp) initEnv @?= 0,
+    
+    testCase "Evaluating a conditional of constants when condition is not 0" $
+      evalFull (If (Cst 2) (Cst 3) undefined) initEnv @?= 3,
+
+    testCase "Evaluating a conditional of constants when condition is 0" $
+      evalFull (If (Cst 0) undefined (Cst 3)) initEnv @?= 3,
+    
+    testCase "Evaluating a variable in an environment with one variable" $
+      evalFull (Var "x") (\x -> if x == "x" then Just 2 else initEnv x) @?= 2,
+
+    testCase "Evaluating a variable in an environment with multiple variables" $
+      evalFull (Var "x") complexEnv @?= 2,
+    
+    testCase "Evaluating a simple let statement" $
+      evalFull (Let "x" (Cst 4) (Var "x")) initEnv @?= 4,
+    
+    testCase "Evaluating a more complex let statement" $
+      evalFull (Let "x" complexExp (Add (Var "x") (Cst 3))) initEnv @?= 3,
+    
+    testCase "Evaluating a simple sum" $
+      evalFull (Sum "x" (Cst 1) (Cst 5) (Var "x")) initEnv @?= 15,
+    
+    testCase "Evaluating a more complex sum" $
+      evalFull (Sum "x" (Cst 1) (Cst 5) (Mul (Cst 2) (Var "x"))) initEnv @?= 30
   ]
 
 
