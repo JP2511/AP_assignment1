@@ -7,7 +7,7 @@ import Data.List (intercalate)
 import System.Exit (exitSuccess, exitFailure)  -- for when running stand-alone
 import Test.Tasty
 import Test.Tasty.HUnit
-import Definitions (ArithError(EOther))
+import Definitions (ArithError(EOther, EDivZero), initEnv)
 
 
 tests :: [(String, Bool)]
@@ -17,60 +17,64 @@ tests = [test1, test2, test3] where
   test3 = ("test3", evalErr (Var "x") initEnv == Left (EBadVar "x"))
 
 testEvalErr = testGroup "Unit tests for evalErr"
-  [ testCase "Testing evalErr: Constant expression" $
+  [ testCase "Evaluating: Constant expression" $
       evalErr (Cst 5) initEnv @?= Right 5 ,
     
-    testCase "Testing evalErr: Division by 0" $
+    testCase "Evaluating: Division by 0" $
       evalErr (Div (Cst 5) (Cst 0)) initEnv @?= Left EDivZero,
     
-    testCase "Testing evalErr: Division by a non-zero value" $
+    testCase "Evaluating: Division by a non-zero value" $
       evalErr (Div (Cst 5) (Cst 2)) initEnv @?= Right 2,
     
-    testCase "Testing evalErr: Division where denominater is larger than nominater" $
+    testCase "Evaluating: Division where denominater is larger than nominater" $
       evalErr (Div (Cst 5) (Cst 6)) initEnv @?= Right 0,
     
-    testCase "Testing evalErr: Multiplication" $
+    testCase "Evaluating: Multiplication" $
       evalErr (Mul (Cst 5) (Cst 4)) initEnv @?= Right 20,
     
-    testCase "Testing evalErr: Subtraction" $
+    testCase "Evaluating: Subtraction" $
       evalErr (Sub (Cst 79) (Cst 80)) initEnv @?= Right (-1),
     
-    testCase "Testing evalErr: Subtraction" $
+    testCase "Evaluating: Subtraction 2" $
       evalErr (Add (Cst 79) (Cst 21)) initEnv @?= Right 100,
 
-    testCase "Testing evalErr: Exponential" $
+    testCase "Evaluating: Exponential" $
       evalErr (Pow (Cst 3) (Cst 3)) initEnv @?= Right 27,
 
-    testCase "Testing evalErr: Negative Exponential" $
+    testCase "Evaluating: Negative Exponential" $
       evalErr (Pow (Cst 79) (Cst (-2))) initEnv @?= Left ENegPower,
     
-    testCase "Testing evalErr: If statment, condition == 0" $
+    testCase "Evaluating: If statment, condition == 0" $
       evalErr (If (Cst 0) (Cst 3) (Cst 2)) initEnv @?= Right 2,
 
-    testCase "Testing evalErr: If statment, condition /= 0" $
-      evalErr (If (Cst 100) (Cst 3) (Cst 2)) initEnv @?= Right 3,
-    
-    testCase "Testing evalErr: If statment, condition /= 0" $
+    testCase "Evaluating: If statment, condition /= 0" $
       evalErr (If (Cst 100) (Cst 3) (Cst 2)) initEnv @?= Right 3,
 
-    testCase "Testing evalErr: Sum" $
+    testCase "Evaluating: Sum" $
       evalErr (Sum "x" (Cst 1) (Cst 4) (Mul (Cst 10) (Var "x"))) initEnv @?= Right 100,
 
-    testCase "Testing evalErr: Sum where 'Start value' larger than 'End value'" $
+    testCase "Evaluating: Sum where 'Start value' larger than 'End value'" $
       evalErr (Sum "x" (Cst 6) (Cst 4) (Mul (Cst 10) (Var "x"))) initEnv @?= Left (EOther "Sum -> Initial value bigger than final value"),
     
     
-    testCase "Testing evalErr: Let where the variable is divided by 0" $
+    testCase "Evaluating: Let where the variable is divided by 0" $
       evalErr (Let "x" (Div (Cst 4) (Cst 0)) (Cst 5)) initEnv @?= Left EDivZero,
 
-    testCase "Testing evalErr: Let" $
+    testCase "Evaluating: Let" $
       evalErr (Let "x" (Cst 4) (Add (Cst 5) (Var "x"))) initEnv @?= Right 9,
 
-    testCase "Testing evalErr: Var not in enviroment" $
+    testCase "Evaluating: Var not in enviroment" $
       evalErr (Var "x") initEnv @?= Left (EBadVar "x"),
 
-    testCase "Testing evalErr: Var in the enviroment" $
-      evalErr (Var "x") (extendEnv "x" 4 initEnv) @?= Right 4 ]
+    testCase "Evaluating: Var in the enviroment" $
+      evalErr (Var "x") (extendEnv "x" 4 initEnv) @?= Right 4,
+      
+    testCase "Evaluating: EDivZero error raised to the power of 0" $
+      evalErr (Pow (Div (Cst 4) (Cst 0)) (Cst 0)) initEnv @?= Left EDivZero,
+    
+    testCase "Evaluating: 5 raised power of 0" $
+      evalErr (Pow (Div (Cst 5) (Cst 1)) (Cst 0)) initEnv @?= Right 1
+       ]
 
 
 main :: IO ()
