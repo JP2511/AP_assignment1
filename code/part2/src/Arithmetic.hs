@@ -63,10 +63,9 @@ evalSimple (Cst x)   = x
 evalSimple (Add x y) = applySimEval x y (+)
 evalSimple (Sub x y) = applySimEval x y (-)
 evalSimple (Mul x y) = applySimEval x y (*)
-evalSimple (Div x y) 
-  | a < b     = error "Division: numerator is smaller than denominator"
-  | b == 0    = error "Division: denominator is equal to zero."
-  | otherwise = div a b
+evalSimple (Div x y) = if b == 0 
+  then error "Division: denominator is equal to zero."
+  else div a b
   where
     a = evalSimple x
     b = evalSimple y
@@ -101,8 +100,8 @@ evalFull (Sub x y) env = applyFullEval x y (-) env
 -- Multiplication
 evalFull (Mul x y) env = applyFullEval x y (*) env
 -- Division
-evalFull (Div x y) env = if b == 0 || a < b
-  then error "Division where numerator is smaller than denominator"
+evalFull (Div x y) env = if b == 0
+  then error "Division: denominator is equal to zero."
   else div a b
   where
     a = evalFull x env
@@ -181,10 +180,7 @@ evalErr (Sub x y) env = parser x y (-) env
 evalErr (Mul x y) env = parser x y (*) env
 -- Division
 evalErr (Div x y) env = f $ parseArgs x y env where
-  f (Right (a, b)) 
-    | b == 0 = Left EDivZero
-    | a < b  = Left (EOther "Division -> numerator smaller than denominator")
-    | otherwise = Right (div a b) 
+  f (Right (a, b)) = if b == 0 then Left EDivZero else Right (div a b) 
   f (Left e) = Left e
 -- Power
 evalErr (Pow x y) env = f $ parseArgs x y env where
