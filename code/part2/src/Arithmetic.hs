@@ -125,11 +125,13 @@ evalFull (Var v)                env = f . env $ v where
 -- Equation
 evalFull (Let var def body)     env = evalFull body $ extendEnv var value env
   where value = evalFull def env
--- Sum
-evalFull (Sum var from to body) env = foldr f 0 (enumFromTo i n) where
+-- Sum -- TODO: n < i ERROR
+evalFull (Sum var from to body) env = tryError where
   f x acc = (+) acc (evalFull body (extendEnv var x env))
   i = evalFull from env
   n = evalFull to   env
+  errorMess = "Initial value bigger than final value"
+  tryError = if i > n then error errorMess else foldr f 0 (enumFromTo i n)
 
 
 -- ----------------------------------------------------------------------------
@@ -202,11 +204,15 @@ evalErr (Let var def body) env = f (evalErr def env) where
   f (Left e)    = Left e
 -- Sum
 evalErr (Sum var from to body) env = f (parseArgs from to env) where
-  f (Right (a, b)) = foldr g (Right 0) (enumFromTo a b) where
-    g _ (Left e)    = Left e
-    g x (Right acc) = h (evalErr body $ extendEnv var x env) where
-      h (Right z) = Right $ z + acc
-      h e         = e
+  f (Right (f, t)) = if  t < f 
+    then Left (EOther errorM) 
+    else foldr g (Right 0) (enumFromTo f t) 
+    where
+      errorM = "Sum -> Initial value bigger than final value"
+      g _ (Left e)    = Left e
+      g x (Right acc) = h (evalErr body $ extendEnv var x env) where
+        h (Right z) = Right $ z + acc
+        h e         = e
   f (Left e) = (Left e)
 
 
