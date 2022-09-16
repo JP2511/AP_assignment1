@@ -141,9 +141,7 @@ evalFull (Sum var from to body) env = tryError where
   a tuple.
 -}
 parseArgs :: Exp -> Exp -> Env -> Either ArithError (Integer, Integer)
-parseArgs x y env = errorParser a b where
-  a = evalErr x env
-  b = evalErr y env
+parseArgs x y env = errorParser (evalErr x env) (evalErr y env) where
   errorParser (Left e)  _         = Left e
   errorParser _         (Left e)  = Left e
   errorParser (Right i) (Right j) = Right (i, j)
@@ -172,10 +170,28 @@ parser x y f env = applyFuncErr (parseArgs x y env) f
 {- Checks if the parameter given is an ArithError, if it is, propagates it. If 
   it is not then it applies a given function to it.
 -}
-errorBind :: (a -> Either ArithError b) -> Either ArithError a -> 
-              Either ArithError b
+errorBind :: (a -> Either ArithError Integer) -> Either ArithError a -> 
+              Either ArithError Integer
 errorBind _ (Left e)  = Left e
 errorBind f (Right a) = f a
+
+
+{- Provides a more general case to the parser function. It takes two expressions
+and evaluates them. If any of them, return an error, it propagates the error,
+otherwise it applies a function that may or not return an error.
+-}
+parseAndBind :: Exp -> Exp -> Env -> 
+                ((Integer, Integer) -> Either ArithError Integer) -> 
+                Either ArithError Integer
+parseAndBind x y env f = errorBind f $ parseArgs x y env
+
+
+{- Similar to the parseAndBind, but only takes one expression.
+-}
+evalAndBind :: Exp -> Env -> 
+                (Integer -> Either ArithError Integer) -> 
+                Either ArithError Integer
+evalAndBind x env f = errorBind f $ evalErr x env
 
 
 evalErr :: Exp -> Env -> Either ArithError Integer
@@ -188,30 +204,29 @@ evalErr (Sub x y) env = parser x y (-) env
 -- Multiplication
 evalErr (Mul x y) env = parser x y (*) env
 -- Division
-evalErr (Div x y) env = errorBind f $ parseArgs x y env where
+evalErr (Div x y) env = parseAndBind x y env f where
   f (a, b) = if b == 0 then Left EDivZero else Right (div a b)
 -- Power
-evalErr (Pow x y) env = errorBind f $ parseArgs x y env where
+evalErr (Pow x y) env = parseAndBind x y env f where
   f (a, b) = if b < 0 then Left ENegPower else Right ((^) a b)
 -- Conditional
-evalErr (If test yes no) env = errorBind f $ evalErr test env where
+evalErr (If test yes no) env = evalAndBind test env f where
   f a = if a /= 0 then evalErr yes env else evalErr no env
 -- Variable
 evalErr (Var v) env = f . env $ v where
   f Nothing  = Left (EBadVar v)
   f (Just x) = Right x
 -- Equation
-evalErr (Let var def body) env = errorBind f $ evalErr def env where
+evalErr (Let var def body) env = evalAndBind def env f where
   f val = evalErr body $ extendEnv var val env
 -- Sum
-evalErr (Sum var from to body) env = errorBind f $ parseArgs from to env where
+evalErr (Sum var from to body) env = parseAndBind from to env f where
   f (f, t) = if  t < f 
-    then Left (EOther errorM) 
+    then Left (EOther "Sum -> Initial value bigger than final value") 
     else foldr g (Right 0) (enumFromTo f t) 
     where
-      errorM = "Sum -> Initial value bigger than final value"
       g _ (Left e)    = Left e
-      g x (Right acc) = errorBind h (evalErr body $ extendEnv var x env) where
+      g x (Right acc) = evalAndBind body (extendEnv var x env) h where
         h z = Right $ z + acc
 
 
