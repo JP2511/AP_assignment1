@@ -31,7 +31,7 @@ addParenthesis exp = "(" ++ exp ++ ")"
 representation of the operation to be performed on the expressions. 
 -}
 joinExp :: Exp -> Exp -> String -> String
-joinExp x y joiner = (showExp x) ++ joiner ++ (showExp y)
+joinExp x y joiner = showExp x ++ joiner ++ showExp y
 
 
 {- Joins the string representations of the expressions using a string 
@@ -43,11 +43,11 @@ createRepExp x y joiner = addParenthesis (joinExp x y joiner)
 
 
 showExp :: Exp -> String
-showExp (Cst x)   = if x < 0 then addParenthesis . show x else show x
+showExp (Cst x)   = if x < 0 then addParenthesis . show $ x else show x
 showExp (Add x y) = createRepExp x y " + "
 showExp (Sub x y) = createRepExp x y " - "
 showExp (Mul x y) = createRepExp x y " * "
-showExp (Div x y) = createRepExp x y " div "
+showExp (Div x y) = createRepExp x y " `div` "
 showExp (Pow x y) = createRepExp x y " ^ "
 showExp _         = error "Operation not possible to print in expression."
 
@@ -116,7 +116,7 @@ evalFull (Pow x y) env = if b < 0
     a = evalFull x env
     b = evalFull y env
 -- Conditional
-evalFull (If test yes no)       env = if (evalFull test env) /= 0 
+evalFull (If test yes no)       env = if evalFull test env /= 0 
   then evalFull yes env
   else evalFull no  env
 -- Variable
@@ -124,15 +124,15 @@ evalFull (Var v)                env = f . env $ v where
   f Nothing  = error "Value constructor 'Nothing' in expression"
   f (Just x) = x
 -- Equation
-evalFull (Let var def body)     env = (value - value) + (evalFull body $ extendEnv var value env)
-  where value = evalFull def env
+evalFull (Let var def body)     env = (value - value) + evaluatedBody where
+    value = evalFull def env
+    evaluatedBody = evalFull body $ extendEnv var value env
 -- Sum
-evalFull (Sum var from to body) env = tryError where
+evalFull (Sum var from to body) env = sum where
   f x acc = (+) acc (evalFull body (extendEnv var x env))
   i = evalFull from env
   n = evalFull to   env
-  errorMess = "Initial value bigger than final value"
-  tryError = if i > n then error errorMess else foldr f 0 (enumFromTo i n)
+  sum = if i > n then 0 else foldr f 0 (enumFromTo i n)
 
 
 -- ----------------------------------------------------------------------------
@@ -224,7 +224,7 @@ evalErr (Let var def body) env = evalAndBind def env f where
 -- Sum
 evalErr (Sum var from to body) env = parseAndBind from to env f where
   f (f, t) = if  t < f 
-    then Left (EOther "Sum -> Initial value bigger than final value") 
+    then Right 0
     else foldr g (Right 0) (enumFromTo f t) 
     where
       {- If at any point, the variable that stores the sum of the expressions
@@ -251,15 +251,19 @@ getPriority (Add _ _) True  = 1
 getPriority (Add _ _) _     = 2
 getPriority (Sub _ _) True  = 1
 getPriority (Sub _ _) _     = 2
+getPriority (Mul _ _) True  = 2
 getPriority (Mul _ _) _     = 3
 getPriority (Div _ _) _     = 3
 getPriority (Pow _ _) _     = 4
-getPriority (Cst _)   _     = 5
+getPriority (Cst x)   _     = if x < 0 then 0 else 5
+getPriority _         _     = error errorMessage where
+  errorMessage = "Operation not possible to print in expression."
 
 
-isSub :: Exp -> Bool
-isSub (Sub _ _) = True
-isSub _         = False
+isSubOrDiv :: Exp -> Bool
+isSubOrDiv (Sub _ _) = True
+isSubOrDiv (Div _ _) = True
+isSubOrDiv _         = False
 
 
 {- Adds parenthesis to part of an expression if that part has an operation with
@@ -267,20 +271,20 @@ isSub _         = False
 showOnPriority :: Exp -> Exp -> Exp -> String -> String
 showOnPriority outer left right joiner = l ++ joiner ++ r
   where
-    leftPrio  = (getPriority outer False) > (getPriority left False)
-    rightPrio = (getPriority outer False) > (getPriority right $ isSub outer)
+    leftPrio  = getPriority outer False > getPriority left False
+    rightPrio = getPriority outer False > getPriority right (isSubOrDiv outer)
     showWithParenthesis = addParenthesis . showCompact
     l = if leftPrio  then showWithParenthesis left  else showCompact left
     r = if rightPrio then showWithParenthesis right else showCompact right
 
 
 showCompact :: Exp -> String
-showCompact (Cst x)   = if x < 0 then addParenthesis . show x else show x
-showCompact (Add x y) = showOnPriority (Add x y) x y " + "
-showCompact (Sub x y) = showOnPriority (Sub x y) x y " - "
-showCompact (Mul x y) = showOnPriority (Mul x y) x y " * "
-showCompact (Div x y) = showOnPriority (Div x y) x y " div "
-showCompact (Pow x y) = showOnPriority (Pow x y) x y " ^ "
+showCompact (Cst x)   = show x
+showCompact (Add x y) = showOnPriority (Add x y) x y "+"
+showCompact (Sub x y) = showOnPriority (Sub x y) x y "-"
+showCompact (Mul x y) = showOnPriority (Mul x y) x y "*"
+showCompact (Div x y) = showOnPriority (Div x y) x y "`div`"
+showCompact (Pow x y) = showOnPriority (Pow x y) x y "^"
 showCompact _         = error "Operation not possible to print in expression."
 
 
@@ -292,7 +296,10 @@ evalEager :: Exp -> Env -> Either ArithError Integer
 evalEager = evalErr
 
 evalLazy :: Exp -> Env -> Either ArithError Integer
-evalLazy (Let var def body) env = f $ evalErr body env where
-  f (Right a) = Right a
-  f (Left _)  = evalErr (Let var def body) env
+evalLazy (Let var def body) env = g without with where
+  without = evalErr body env
+  with = evalErr (Let var def body) env
+  g (Left _)  a        = a
+  g (Right a) (Left _) = Right a
+  g (Right _) b        = b
 evalLazy expr env = evalErr expr env

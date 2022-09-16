@@ -19,7 +19,7 @@ complexExp :: Exp
 complexExp = Pow divExp mulExp
 
 complexShowResult :: String
-complexShowResult = "((1 div 2) ^ ((3 + 4) * (6 - 5)))"
+complexShowResult = "((1 `div` 2) ^ ((3 + 4) * (6 - 5)))"
 
 
 -- ----------------------------------------------------------------------------
@@ -40,7 +40,7 @@ testShowExp = testGroup "Unit Tests for showExp"
       showExp (Mul (Cst 1) (Cst 2)) @?= "(1 * 2)",
 
     testCase "Printing a division of constants" $
-      showExp (Div (Cst 1) (Cst 2)) @?= "(1 div 2)",
+      showExp (Div (Cst 1) (Cst 2)) @?= "(1 `div` 2)",
     
     testCase "Printing a exponentiation of constants" $
       showExp (Pow (Cst 1) (Cst 2)) @?= "(1 ^ 2)",
@@ -142,6 +142,9 @@ testEvalFull = testGroup "Unit Tests for evalFull"
     
     testCase "Evaluating a simple sum" $
       evalFull (Sum "x" (Cst 1) (Cst 5) (Var "x")) initEnv @?= 15,
+
+    testCase "Evaluating sum with higher initial value than final value" $
+      evalFull (Sum "x" (Cst 5) (Cst 1) (Var "x")) initEnv @?= 0,
     
     testCase "Evaluating a more complex sum" $
       evalFull (Sum "x" (Cst 1) (Cst 5) (Mul (Cst 2) (Var "x"))) initEnv @?= 30
@@ -154,10 +157,6 @@ testEvalFull = testGroup "Unit Tests for evalFull"
 {- Creates a sum expression with a given starting value -}
 createSumExp :: Integer -> Exp
 createSumExp x = Sum "x" (Cst x) (Cst 4) (Mul (Cst 10) (Var "x"))
-
-sumError :: Either ArithError Integer
-sumError = Left (EOther "Sum -> Initial value bigger than final value")
-
 
 testEvalErr = testGroup "Unit tests for evalErr"
   [ 
@@ -198,7 +197,7 @@ testEvalErr = testGroup "Unit tests for evalErr"
       evalErr (createSumExp 1) initEnv @?= Right 100,
 
     testCase "Evaluating: Sum where 'Start value' larger than 'End value'" $
-      evalErr (createSumExp 6) initEnv @?= sumError,
+      evalErr (createSumExp 6) initEnv @?= Right 0,
     
     testCase "Evaluating: Let where the variable is divided by 0" $
       evalErr (Let "x" (Div (Cst 4) (Cst 0)) (Cst 5)) initEnv @?= Left EDivZero,
@@ -273,6 +272,9 @@ divWithEqPriority = (Div (Mul (Cst 1) (Cst 2)) (Div (Cst 3) (Cst 4)))
 divWithHiPriority :: Exp
 divWithHiPriority = (Div (Pow (Cst 1) (Cst 2)) (Pow (Cst 3) (Cst 4)))
 
+divWithHiMulPriority :: Exp
+divWithHiMulPriority = (Div (Pow (Cst 1) (Cst 2)) (Mul (Cst 3) (Cst 4)))
+
 divWithMixPriority :: Exp
 divWithMixPriority = (Div (Add (Cst 1) (Cst 2)) (Pow (Cst 3) (Cst 4)))
 
@@ -292,61 +294,64 @@ testShowCompact = testGroup "Unit tests for showCompact"
       showCompact (Cst 87) @?= "87",
 
     testCase "Addition with arguments with same priority" $
-      showCompact addWithEqPriority @?= "1 + 2 + 3 - 4",
+      showCompact addWithEqPriority @?= "1+2+3-4",
 
     testCase "Addition with arguments with higher priority" $
-      showCompact addWithMixPriority @?= "1 + 2 + 3 div 4",
+      showCompact addWithMixPriority @?= "1+2+3`div`4",
     
     testCase "Addition with arguments with higher priority" $
-      showCompact addWithHiPriority @?= "1 * 2 + 3 div 4",
+      showCompact addWithHiPriority @?= "1*2+3`div`4",
     
     testCase "Subtraction with arguments of equal priority and addition" $
-      showCompact subWithEqAdPriority @?= "1 - 2 - (3 + 4)",
+      showCompact subWithEqAdPriority @?= "1-2-(3+4)",
     
     testCase "Subtraction with arguments of equal priority and subtraction" $
-      showCompact subWithEqSubPriority @?= "1 + 2 - (3 - 4)",
+      showCompact subWithEqSubPriority @?= "1+2-(3-4)",
     
     testCase "Subtraction with arguments of higher priority" $
-      showCompact subWithHiPriority @?= "1 * 2 - 3 div 4",
+      showCompact subWithHiPriority @?= "1*2-3`div`4",
     
     testCase "Subtraction with arguments with lower and higher priority" $
-      showCompact subWithLoHiPriority @?= "1 + 2 - 3 div 4",
+      showCompact subWithLoHiPriority @?= "1+2-3`div`4",
     
     testCase "Subtraction with arguments with higher and lower priority" $
-      showCompact subWithHiLoPriority @?= "1 div 2 - (3 - 4)",
+      showCompact subWithHiLoPriority @?= "1`div`2-(3-4)",
     
     testCase "Multiplication with arguments with lower priority" $
-      showCompact mulWithLoPriority @?= "(1 + 2) * (3 - 4)",
+      showCompact mulWithLoPriority @?= "(1+2)*(3-4)",
 
     testCase "Multiplication with arguments with same priority" $
-      showCompact mulWithEqPriority @?= "1 * 2 * 3 div 4",
+      showCompact mulWithEqPriority @?= "1*2*3`div`4",
 
     testCase "Multiplication with arguments with higher priority" $
-      showCompact mulWithHiPriority @?= "1 ^ 2 * 3 ^ 4",
+      showCompact mulWithHiPriority @?= "1^2*3^4",
 
     testCase "Multiplication with mixed priority" $
-      showCompact mulWithMixPriority @?= "(1 + 2) * 3 ^ 4",
+      showCompact mulWithMixPriority @?= "(1+2)*3^4",
     
     testCase "Division with arguments with lower priority" $
-      showCompact divWithLoPriority @?= "(1 + 2) div (3 - 4)",
+      showCompact divWithLoPriority @?= "(1+2)`div`(3-4)",
 
     testCase "Division with arguments with same priority" $
-      showCompact divWithEqPriority @?= "1 * 2 div 3 div 4",
+      showCompact divWithEqPriority @?= "1*2`div`3`div`4",
 
     testCase "Division with arguments with higher priority" $
-      showCompact divWithHiPriority @?= "1 ^ 2 div 3 ^ 4",
+      showCompact divWithHiPriority @?= "1^2`div`3^4",
+
+    testCase "Division with arguments with higher priority and multiplication" $
+      showCompact divWithHiMulPriority @?= "1^2`div`(3*4)",
 
     testCase "Division with mixed priority" $
-      showCompact divWithMixPriority @?= "(1 + 2) div 3 ^ 4",
+      showCompact divWithMixPriority @?= "(1+2)`div`3^4",
     
     testCase "Exponentiation with arguments with lower priority" $
-      showCompact powWithLoPriority @?= "(1 div 2) ^ (3 - 4)",
+      showCompact powWithLoPriority @?= "(1`div`2)^(3-4)",
 
     testCase "Exponentiation with arguments with same priority" $
-      showCompact powWithEqPriority @?= "1 ^ 2 ^ 3 ^ 4",
+      showCompact powWithEqPriority @?= "1^2^3^4",
 
     testCase "Exponentiation with mixed priority" $
-      showCompact powWithMixPriority @?= "(1 + 2) ^ 3 ^ 4"
+      showCompact powWithMixPriority @?= "(1+2)^3^4"
   ]
 
 

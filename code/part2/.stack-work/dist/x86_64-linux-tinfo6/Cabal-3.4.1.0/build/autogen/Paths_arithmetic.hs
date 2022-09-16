@@ -31,7 +31,7 @@ version = Version [0,0,0] []
 bindir, libdir, dynlibdir, datadir, libexecdir, sysconfdir :: FilePath
 
 bindir     = "/mnt/c/Users/joaop/OneDrive/Documents/Mestrado_UCPH/2_year/Advanced_Programming/assignment_1/code/part2/.stack-work/install/x86_64-linux-tinfo6/78705b707fbd8b56de850a72fcbfc77114c0fe83717ee051cedf81b2604a2b2a/9.0.2/bin"
-libdir     = "/mnt/c/Users/joaop/OneDrive/Documents/Mestrado_UCPH/2_year/Advanced_Programming/assignment_1/code/part2/.stack-work/install/x86_64-linux-tinfo6/78705b707fbd8b56de850a72fcbfc77114c0fe83717ee051cedf81b2604a2b2a/9.0.2/lib/x86_64-linux-ghc-9.0.2/arithmetic-0.0.0-BYeUzCBHy4lL4fcEDrpVad"
+libdir     = "/mnt/c/Users/joaop/OneDrive/Documents/Mestrado_UCPH/2_year/Advanced_Programming/assignment_1/code/part2/.stack-work/install/x86_64-linux-tinfo6/78705b707fbd8b56de850a72fcbfc77114c0fe83717ee051cedf81b2604a2b2a/9.0.2/lib/x86_64-linux-ghc-9.0.2/arithmetic-0.0.0-CvrcPM3MfhFBsR4RqOrqhK"
 dynlibdir  = "/mnt/c/Users/joaop/OneDrive/Documents/Mestrado_UCPH/2_year/Advanced_Programming/assignment_1/code/part2/.stack-work/install/x86_64-linux-tinfo6/78705b707fbd8b56de850a72fcbfc77114c0fe83717ee051cedf81b2604a2b2a/9.0.2/lib/x86_64-linux-ghc-9.0.2"
 datadir    = "/mnt/c/Users/joaop/OneDrive/Documents/Mestrado_UCPH/2_year/Advanced_Programming/assignment_1/code/part2/.stack-work/install/x86_64-linux-tinfo6/78705b707fbd8b56de850a72fcbfc77114c0fe83717ee051cedf81b2604a2b2a/9.0.2/share/x86_64-linux-ghc-9.0.2/arithmetic-0.0.0"
 libexecdir = "/mnt/c/Users/joaop/OneDrive/Documents/Mestrado_UCPH/2_year/Advanced_Programming/assignment_1/code/part2/.stack-work/install/x86_64-linux-tinfo6/78705b707fbd8b56de850a72fcbfc77114c0fe83717ee051cedf81b2604a2b2a/9.0.2/libexec/x86_64-linux-ghc-9.0.2/arithmetic-0.0.0"
