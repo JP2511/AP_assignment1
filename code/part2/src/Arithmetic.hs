@@ -260,6 +260,7 @@ getPriority _         _     = error errorMessage where
   errorMessage = "Operation not possible to print in expression."
 
 
+{- Determines if an expression is a subtraction or a division. -}
 isSubOrDiv :: Exp -> Bool
 isSubOrDiv (Sub _ _) = True
 isSubOrDiv (Div _ _) = True
