@@ -3,24 +3,22 @@
 import Definitions
 import Arithmetic
 
-import Data.List (intercalate)
-import System.Exit (exitSuccess, exitFailure)  -- for when running stand-alone
 import Test.Tasty
 import Test.Tasty.HUnit
-
-tests :: [(String, Bool)]
-tests = [test1, test2, test3] where
-  test1 = ("test1", evalSimple (Add (Cst 2) (Cst 2)) == 4)
-  test2 = ("test2", evalFull (Let "a" (Cst 42) (Var "a")) initEnv == 42)
-  test3 = ("test3", evalErr (Var "x") initEnv == Left (EBadVar "x"))
-
 
 {- Complex Expression which we couldn't fit inside of a testCase because where
   doesn't work inside of a testCase
 -}
+divExp :: Exp
 divExp = Div (Cst 1) (Cst 2)
+
+mulExp :: Exp
 mulExp = Mul (Add (Cst 3) (Cst 4)) (Sub (Cst 6) (Cst 5))
+
+complexExp :: Exp
 complexExp = Pow divExp mulExp
+
+complexShowResult :: String
 complexShowResult = "((1 div 2) ^ ((3 + 4) * (6 - 5)))"
 
 
@@ -90,7 +88,7 @@ testExtendEnv = testGroup "Unit Tests for extendEnv"
   ]
 
 
--- Environment with multiple 
+-- Environment with multiple variables stored
 complexEnv = \y -> if y == "y" then Just 4 else f y where
   f = \x -> if x == "x" then Just 2 else initEnv x
 
@@ -143,6 +141,14 @@ testEvalFull = testGroup "Unit Tests for evalFull"
   ]
 
 
+{- Creates a sum expression with a given starting value -}
+createSumExp :: Integer -> Exp
+createSumExp x = Sum "x" (Cst x) (Cst 4) (Mul (Cst 10) (Var "x"))
+
+sumError :: Either ArithError Integer
+sumError = Left (EOther "Sum -> Initial value bigger than final value")
+
+
 testEvalErr = testGroup "Unit tests for evalErr"
   [ 
     testCase "Evaluating: Constant expression" $
@@ -179,10 +185,10 @@ testEvalErr = testGroup "Unit tests for evalErr"
       evalErr (If (Cst 100) (Cst 3) (Cst 2)) initEnv @?= Right 3,
 
     testCase "Evaluating: Sum" $
-      evalErr (Sum "x" (Cst 1) (Cst 4) (Mul (Cst 10) (Var "x"))) initEnv @?= Right 100,
+      evalErr (createSumExp 1) initEnv @?= Right 100,
 
     testCase "Evaluating: Sum where 'Start value' larger than 'End value'" $
-      evalErr (Sum "x" (Cst 6) (Cst 4) (Mul (Cst 10) (Var "x"))) initEnv @?= Left (EOther "Sum -> Initial value bigger than final value"),
+      evalErr (createSumExp 6) initEnv @?= sumError,
     
     testCase "Evaluating: Let where the variable is divided by 0" $
       evalErr (Let "x" (Div (Cst 4) (Cst 0)) (Cst 5)) initEnv @?= Left EDivZero,
@@ -204,12 +210,8 @@ testEvalErr = testGroup "Unit tests for evalErr"
   ]
 
 
+tests = testGroup "Tests" [testShowExp, testEvalSimple, testEvalFull, 
+                            testExtendEnv, testEvalErr]
 
 main :: IO ()
-main =
-  let failed = [name | (name, ok) <- tests, not ok]
-  in case failed of
-       [] -> do putStrLn "All tests passed!"
-                exitSuccess
-       _ -> do putStrLn $ "Failed tests: " ++ intercalate ", " failed
-               exitFailure
+main = defaultMain tests
