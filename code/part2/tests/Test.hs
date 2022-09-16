@@ -210,8 +210,25 @@ testEvalErr = testGroup "Unit tests for evalErr"
   ]
 
 
+-- test just to ensure eager evaluation
+testEvalEager = testGroup "Unit tests for evalEager"
+  [
+    testCase "Evaluating a let expression with an error in the definition" $
+      evalEager (Let "x" (Var "y") (Cst 0)) initEnv @?= Left (EBadVar "y")
+  ]
+
+
+-- test just to ensure lazy evaluation
+testEvalLazy = testGroup "Unit tests for evalLazy"
+  [
+    testCase "Evaluating a let expression with an error in the definition" $
+      evalLazy (Let "x" (Var "y") (Cst 0)) initEnv @?= Right 0
+  ]
+
+
 tests = testGroup "Tests" [testShowExp, testEvalSimple, testEvalFull, 
-                            testExtendEnv, testEvalErr]
+                            testExtendEnv, testEvalErr, testEvalEager,
+                            testEvalLazy]
 
 main :: IO ()
 main = defaultMain tests
