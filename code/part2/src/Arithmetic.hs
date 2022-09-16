@@ -124,7 +124,7 @@ evalFull (Var v)                env = f . env $ v where
 -- Equation
 evalFull (Let var def body)     env = evalFull body $ extendEnv var value env
   where value = evalFull def env
--- Sum -- TODO: n < i ERROR
+-- Sum
 evalFull (Sum var from to body) env = tryError where
   f x acc = (+) acc (evalFull body (extendEnv var x env))
   i = evalFull from env
@@ -165,8 +165,17 @@ are evaluated. If any error occurs, it is propagated. Otherwise, the result is
 returned.
 -}
 parser :: Exp -> Exp -> (Integer -> Integer -> Integer) -> Env ->
-  Either ArithError Integer
+          Either ArithError Integer
 parser x y f env = applyFuncErr (parseArgs x y env) f
+
+
+{- Checks if the parameter given is an ArithError, if it is, propagates it. If 
+  it is not then it applies a given function to it.
+-}
+errorBind :: (a -> Either ArithError b) -> Either ArithError a -> 
+              Either ArithError b
+errorBind _ (Left e)  = Left e
+errorBind f (Right a) = f a
 
 
 evalErr :: Exp -> Env -> Either ArithError Integer
@@ -179,37 +188,31 @@ evalErr (Sub x y) env = parser x y (-) env
 -- Multiplication
 evalErr (Mul x y) env = parser x y (*) env
 -- Division
-evalErr (Div x y) env = f $ parseArgs x y env where
-  f (Right (a, b)) = if b == 0 then Left EDivZero else Right (div a b) 
-  f (Left e) = Left e
+evalErr (Div x y) env = errorBind f $ parseArgs x y env where
+  f (a, b) = if b == 0 then Left EDivZero else Right (div a b)
 -- Power
-evalErr (Pow x y) env = f $ parseArgs x y env where
-  f (Right (a, b)) = if b < 0 then Left ENegPower else Right ((^) a b)
-  f (Left e)       = Left e
+evalErr (Pow x y) env = errorBind f $ parseArgs x y env where
+  f (a, b) = if b < 0 then Left ENegPower else Right ((^) a b)
 -- Conditional
-evalErr (If test yes no) env = f $ evalErr test env where
-  f (Right a) = if a /= 0 then evalErr yes env else evalErr no env
-  f (Left e)  = Left e
+evalErr (If test yes no) env = errorBind f $ evalErr test env where
+  f a = if a /= 0 then evalErr yes env else evalErr no env
 -- Variable
 evalErr (Var v) env = f . env $ v where
   f Nothing  = Left (EBadVar v)
   f (Just x) = Right x
 -- Equation
-evalErr (Let var def body) env = f (evalErr def env) where
-  f (Right val) = evalErr body $ extendEnv var val env
-  f (Left e)    = Left e
+evalErr (Let var def body) env = errorBind f $ evalErr def env where
+  f val = evalErr body $ extendEnv var val env
 -- Sum
-evalErr (Sum var from to body) env = f (parseArgs from to env) where
-  f (Right (f, t)) = if  t < f 
+evalErr (Sum var from to body) env = errorBind f $ parseArgs from to env where
+  f (f, t) = if  t < f 
     then Left (EOther errorM) 
     else foldr g (Right 0) (enumFromTo f t) 
     where
       errorM = "Sum -> Initial value bigger than final value"
       g _ (Left e)    = Left e
-      g x (Right acc) = h (evalErr body $ extendEnv var x env) where
-        h (Right z) = Right $ z + acc
-        h e         = e
-  f (Left e) = (Left e)
+      g x (Right acc) = errorBind h (evalErr body $ extendEnv var x env) where
+        h z = Right $ z + acc
 
 
 -- ----------------------------------------------------------------------------
