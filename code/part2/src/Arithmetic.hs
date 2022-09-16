@@ -239,11 +239,24 @@ evalErr (Sum var from to body) env = parseAndBind from to env f where
 -- ----------------------------------------------------------------------------
 --  Problem 4 -- optional parts (if not attempted, leave them unmodified)
 
+
+-- ------------- --
+--  Problem 4.2  --
+-- ------------- --
+
 showCompact :: Exp -> String
 showCompact = undefined
 
+
+-- ------------- --
+--  Problem 4.3  --
+-- ------------- -- 
+
 evalEager :: Exp -> Env -> Either ArithError Integer
-evalEager = undefined
+evalEager = evalErr
 
 evalLazy :: Exp -> Env -> Either ArithError Integer
-evalLazy = undefined
+evalLazy (Let var def body) env = f $ evalErr body env where
+  f (Right a) = Right a
+  f (Left _)  = evalErr (Let var def body) env
+evalLazy expr env = evalErr expr env
