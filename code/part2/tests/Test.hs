@@ -22,6 +22,9 @@ complexShowResult :: String
 complexShowResult = "((1 div 2) ^ ((3 + 4) * (6 - 5)))"
 
 
+-- ----------------------------------------------------------------------------
+--  Tests for Part 1
+
 testShowExp = testGroup "Unit Tests for showExp"
   [
     testCase "Printing a single constant value" $
@@ -70,6 +73,10 @@ testEvalSimple = testGroup "Unit Tests for evalSimple"
     testCase "Evaluating a more complex expression" $
       evalSimple complexExp @?= 0
   ]
+
+
+-- ----------------------------------------------------------------------------
+--  Tests for Part 2
 
 
 testExtendEnv = testGroup "Unit Tests for extendEnv"
@@ -141,6 +148,9 @@ testEvalFull = testGroup "Unit Tests for evalFull"
   ]
 
 
+-- ----------------------------------------------------------------------------
+--  Tests for Part 3
+
 {- Creates a sum expression with a given starting value -}
 createSumExp :: Integer -> Exp
 createSumExp x = Sum "x" (Cst x) (Cst 4) (Mul (Cst 10) (Var "x"))
@@ -210,6 +220,140 @@ testEvalErr = testGroup "Unit tests for evalErr"
   ]
 
 
+-- ----------------------------------------------------------------------------
+--  Tests for Part 4
+
+
+-- ----------------------- --
+--  Tests for Problem 4.2  --
+-- ----------------------- --
+
+addWithEqPriority :: Exp
+addWithEqPriority = (Add (Add (Cst 1) (Cst 2)) (Sub (Cst 3) (Cst 4)))
+
+addWithMixPriority :: Exp
+addWithMixPriority = (Add (Add (Cst 1) (Cst 2)) (Div (Cst 3) (Cst 4)))
+
+addWithHiPriority :: Exp
+addWithHiPriority = (Add (Mul (Cst 1) (Cst 2)) (Div (Cst 3) (Cst 4)))
+
+subWithEqAdPriority :: Exp
+subWithEqAdPriority = (Sub (Sub (Cst 1) (Cst 2)) (Add (Cst 3) (Cst 4)))
+
+subWithEqSubPriority :: Exp
+subWithEqSubPriority = (Sub (Add (Cst 1) (Cst 2)) (Sub (Cst 3) (Cst 4)))
+
+subWithHiPriority :: Exp
+subWithHiPriority = (Sub (Mul (Cst 1) (Cst 2)) (Div (Cst 3) (Cst 4)))
+
+subWithLoHiPriority :: Exp
+subWithLoHiPriority = (Sub (Add (Cst 1) (Cst 2)) (Div (Cst 3) (Cst 4)))
+
+subWithHiLoPriority :: Exp
+subWithHiLoPriority = (Sub (Div (Cst 1) (Cst 2)) (Sub (Cst 3) (Cst 4)))
+
+mulWithLoPriority :: Exp
+mulWithLoPriority = (Mul (Add (Cst 1) (Cst 2)) (Sub (Cst 3) (Cst 4)))
+
+mulWithEqPriority :: Exp
+mulWithEqPriority = (Mul (Mul (Cst 1) (Cst 2)) (Div (Cst 3) (Cst 4)))
+
+mulWithHiPriority :: Exp
+mulWithHiPriority = (Mul (Pow (Cst 1) (Cst 2)) (Pow (Cst 3) (Cst 4)))
+
+mulWithMixPriority :: Exp
+mulWithMixPriority = (Mul (Add (Cst 1) (Cst 2)) (Pow (Cst 3) (Cst 4)))
+
+divWithLoPriority :: Exp
+divWithLoPriority = (Div (Add (Cst 1) (Cst 2)) (Sub (Cst 3) (Cst 4)))
+
+divWithEqPriority :: Exp
+divWithEqPriority = (Div (Mul (Cst 1) (Cst 2)) (Div (Cst 3) (Cst 4)))
+
+divWithHiPriority :: Exp
+divWithHiPriority = (Div (Pow (Cst 1) (Cst 2)) (Pow (Cst 3) (Cst 4)))
+
+divWithMixPriority :: Exp
+divWithMixPriority = (Div (Add (Cst 1) (Cst 2)) (Pow (Cst 3) (Cst 4)))
+
+powWithLoPriority :: Exp
+powWithLoPriority = (Pow (Div (Cst 1) (Cst 2)) (Sub (Cst 3) (Cst 4)))
+
+powWithEqPriority :: Exp
+powWithEqPriority = (Pow (Pow (Cst 1) (Cst 2)) (Pow (Cst 3) (Cst 4)))
+
+powWithMixPriority :: Exp
+powWithMixPriority = (Pow (Add (Cst 1) (Cst 2)) (Pow (Cst 3) (Cst 4)))
+
+
+testShowCompact = testGroup "Unit tests for showCompact"
+  [
+    testCase "Constant value" $
+      showCompact (Cst 87) @?= "87",
+
+    testCase "Addition with arguments with same priority" $
+      showCompact addWithEqPriority @?= "1 + 2 + 3 - 4",
+
+    testCase "Addition with arguments with higher priority" $
+      showCompact addWithMixPriority @?= "1 + 2 + 3 div 4",
+    
+    testCase "Addition with arguments with higher priority" $
+      showCompact addWithHiPriority @?= "1 * 2 + 3 div 4",
+    
+    testCase "Subtraction with arguments of equal priority and addition" $
+      showCompact subWithEqAdPriority @?= "1 - 2 - (3 + 4)",
+    
+    testCase "Subtraction with arguments of equal priority and subtraction" $
+      showCompact subWithEqSubPriority @?= "1 + 2 - (3 - 4)",
+    
+    testCase "Subtraction with arguments of higher priority" $
+      showCompact subWithHiPriority @?= "1 * 2 - 3 div 4",
+    
+    testCase "Subtraction with arguments with lower and higher priority" $
+      showCompact subWithLoHiPriority @?= "1 + 2 - 3 div 4",
+    
+    testCase "Subtraction with arguments with higher and lower priority" $
+      showCompact subWithHiLoPriority @?= "1 div 2 - (3 - 4)",
+    
+    testCase "Multiplication with arguments with lower priority" $
+      showCompact mulWithLoPriority @?= "(1 + 2) * (3 - 4)",
+
+    testCase "Multiplication with arguments with same priority" $
+      showCompact mulWithEqPriority @?= "1 * 2 * 3 div 4",
+
+    testCase "Multiplication with arguments with higher priority" $
+      showCompact mulWithHiPriority @?= "1 ^ 2 * 3 ^ 4",
+
+    testCase "Multiplication with mixed priority" $
+      showCompact mulWithMixPriority @?= "(1 + 2) * 3 ^ 4",
+    
+    testCase "Division with arguments with lower priority" $
+      showCompact divWithLoPriority @?= "(1 + 2) div (3 - 4)",
+
+    testCase "Division with arguments with same priority" $
+      showCompact divWithEqPriority @?= "1 * 2 div 3 div 4",
+
+    testCase "Division with arguments with higher priority" $
+      showCompact divWithHiPriority @?= "1 ^ 2 div 3 ^ 4",
+
+    testCase "Division with mixed priority" $
+      showCompact divWithMixPriority @?= "(1 + 2) div 3 ^ 4",
+    
+    testCase "Exponentiation with arguments with lower priority" $
+      showCompact powWithLoPriority @?= "(1 div 2) ^ (3 - 4)",
+
+    testCase "Exponentiation with arguments with same priority" $
+      showCompact powWithEqPriority @?= "1 ^ 2 ^ 3 ^ 4",
+
+    testCase "Exponentiation with mixed priority" $
+      showCompact powWithMixPriority @?= "(1 + 2) ^ 3 ^ 4"
+  ]
+
+
+-- ----------------------- --
+--  Tests for Problem 4.3  --
+-- ----------------------- --
+
 -- test just to ensure eager evaluation
 testEvalEager = testGroup "Unit tests for evalEager"
   [
@@ -226,9 +370,11 @@ testEvalLazy = testGroup "Unit tests for evalLazy"
   ]
 
 
+-- ----------------------------------------------------------------------------
+
 tests = testGroup "Tests" [testShowExp, testEvalSimple, testEvalFull, 
-                            testExtendEnv, testEvalErr, testEvalEager,
-                            testEvalLazy]
+                            testExtendEnv, testEvalErr, testShowCompact, 
+                            testEvalEager, testEvalLazy]
 
 main :: IO ()
 main = defaultMain tests

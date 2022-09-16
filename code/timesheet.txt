@@ -9,13 +9,13 @@
 # YOUR ANSWERS WILL NOT AFFECT YOUR ASSIGNMENT GRADE.
 #
 Assignment: 1  # do not modify
-Installation:
-Reading:
-Lectures:
-Exploration:
-Warmup:
-Development:
-Tests:
-Report:
-Other:
+Installation: 30 m
+Reading: 2 h
+Lectures: 3 h
+Exploration: 30 m
+Warmup: 2 h
+Development: 7 h
+Tests: 3 h
+Report: 1 h
+Other: x
 # Thanks!

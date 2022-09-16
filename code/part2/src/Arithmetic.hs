@@ -1,5 +1,3 @@
--- This is a skeleton file for you to edit
-
 module Arithmetic
   (
   showExp,
@@ -244,8 +242,46 @@ evalErr (Sum var from to body) env = parseAndBind from to env f where
 --  Problem 4.2  --
 -- ------------- --
 
+
+{- Determines the priority of each expression. If an addition or subtraction is 
+nested on the right side of a subtraction, its priority is lower than if it 
+wasn't. -}
+getPriority :: (Num a) => Exp -> Bool -> a 
+getPriority (Add _ _) True  = 1
+getPriority (Add _ _) _     = 2
+getPriority (Sub _ _) True  = 1
+getPriority (Sub _ _) _     = 2
+getPriority (Mul _ _) _     = 3
+getPriority (Div _ _) _     = 3
+getPriority (Pow _ _) _     = 4
+getPriority (Cst _)   _     = 5
+
+
+isSub :: Exp -> Bool
+isSub (Sub _ _) = True
+isSub _         = False
+
+
+{- Adds parenthesis to part of an expression if that part has an operation with
+  lower priority than the original expression. -}
+showOnPriority :: Exp -> Exp -> Exp -> String -> String
+showOnPriority outer left right joiner = l ++ joiner ++ r
+  where
+    leftPrio  = (getPriority outer False) > (getPriority left False)
+    rightPrio = (getPriority outer False) > (getPriority right $ isSub outer)
+    showWithParenthesis = addParenthesis . showCompact
+    l = if leftPrio  then showWithParenthesis left  else showCompact left
+    r = if rightPrio then showWithParenthesis right else showCompact right
+
+
 showCompact :: Exp -> String
-showCompact = undefined
+showCompact (Cst x)   = show x
+showCompact (Add x y) = showOnPriority (Add x y) x y " + "
+showCompact (Sub x y) = showOnPriority (Sub x y) x y " - "
+showCompact (Mul x y) = showOnPriority (Mul x y) x y " * "
+showCompact (Div x y) = showOnPriority (Div x y) x y " div "
+showCompact (Pow x y) = showOnPriority (Pow x y) x y " ^ "
+showCompact _         = error "Operation not possible to print in expression."
 
 
 -- ------------- --
