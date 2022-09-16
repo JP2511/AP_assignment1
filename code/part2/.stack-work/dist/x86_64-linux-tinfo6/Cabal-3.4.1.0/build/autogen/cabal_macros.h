@@ -113,10 +113,10 @@
 #endif /* MIN_TOOL_VERSION_strip */
 
 #ifndef CURRENT_PACKAGE_KEY
-#define CURRENT_PACKAGE_KEY "arithmetic-0.0.0-CvrcPM3MfhFBsR4RqOrqhK"
+#define CURRENT_PACKAGE_KEY "arithmetic-0.0.0-BYeUzCBHy4lL4fcEDrpVad"
 #endif /* CURRENT_packageKey */
 #ifndef CURRENT_COMPONENT_ID
-#define CURRENT_COMPONENT_ID "arithmetic-0.0.0-CvrcPM3MfhFBsR4RqOrqhK"
+#define CURRENT_COMPONENT_ID "arithmetic-0.0.0-BYeUzCBHy4lL4fcEDrpVad"
 #endif /* CURRENT_COMPONENT_ID */
 #ifndef CURRENT_PACKAGE_VERSION
 #define CURRENT_PACKAGE_VERSION "0.0.0"

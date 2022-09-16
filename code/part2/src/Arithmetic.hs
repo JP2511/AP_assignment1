@@ -43,7 +43,7 @@ createRepExp x y joiner = addParenthesis (joinExp x y joiner)
 
 
 showExp :: Exp -> String
-showExp (Cst x)   = show x
+showExp (Cst x)   = if x < 0 then addParenthesis . show x else show x
 showExp (Add x y) = createRepExp x y " + "
 showExp (Sub x y) = createRepExp x y " - "
 showExp (Mul x y) = createRepExp x y " * "
@@ -275,7 +275,7 @@ showOnPriority outer left right joiner = l ++ joiner ++ r
 
 
 showCompact :: Exp -> String
-showCompact (Cst x)   = show x
+showCompact (Cst x)   = if x < 0 then addParenthesis . show x else show x
 showCompact (Add x y) = showOnPriority (Add x y) x y " + "
 showCompact (Sub x y) = showOnPriority (Sub x y) x y " - "
 showCompact (Mul x y) = showOnPriority (Mul x y) x y " * "
