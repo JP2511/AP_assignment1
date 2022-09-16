@@ -126,7 +126,7 @@ evalFull (Var v)                env = f . env $ v where
   f Nothing  = error "Value constructor 'Nothing' in expression"
   f (Just x) = x
 -- Equation
-evalFull (Let var def body)     env = evalFull body $ extendEnv var value env
+evalFull (Let var def body)     env = (value - value) + (evalFull body $ extendEnv var value env)
   where value = evalFull def env
 -- Sum
 evalFull (Sum var from to body) env = tryError where
