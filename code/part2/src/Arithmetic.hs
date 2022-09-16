@@ -36,6 +36,10 @@ joinExp :: Exp -> Exp -> String -> String
 joinExp x y joiner = (showExp x) ++ joiner ++ (showExp y)
 
 
+{- Joins the string representations of the expressions using a string 
+representation of the operation to be performed on the expressions (joiner) and
+adds parenthesis to the expression. 
+-}
 createRepExp :: Exp -> Exp -> String -> String
 createRepExp x y joiner = addParenthesis (joinExp x y joiner)
 
@@ -225,6 +229,8 @@ evalErr (Sum var from to body) env = parseAndBind from to env f where
     then Left (EOther "Sum -> Initial value bigger than final value") 
     else foldr g (Right 0) (enumFromTo f t) 
     where
+      {- If at any point, the variable that stores the sum of the expressions
+      reports the error, the sum stops and the error is propagated.  -}
       g _ (Left e)    = Left e
       g x (Right acc) = evalAndBind body (extendEnv var x env) h where
         h z = Right $ z + acc
